@@ -3,3 +3,8 @@ deps
 *.o
 *.beam
 *.plt
+tmp
+.DS_Store
+.*.swp
+.*.swo
+tags
