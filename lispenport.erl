@@ -18,6 +18,7 @@
 %%   http://norvig.com/lispy.html
 %%
 
+
 -module(lispenport).
 -include_lib("eunit/include/eunit.hrl").
 
@@ -92,8 +93,13 @@ eval(X, Env) when not(is_list(X)) ->
 eval(["quote", Rest], Env) ->
     {Rest, Env};
 % (if test conseq alt)
-eval(["if"|Rest], Env) ->
-    {{found_if, Rest}, Env};
+eval(["if", Predicate, Consequent, Alternative], Env) ->
+    % Better way to do the fallthrough for false/undefined?
+    case eval(Predicate, Env) of
+        {false, _EnvX} -> eval(Alternative, Env);
+        {undefined, _EnvX} -> eval(Alternative, Env);
+        {_, _EnvX} -> eval(Consequent, Env)
+    end;
 % (set! var exp)
 eval(["set!", Var, Exp], Env) ->
     dict:store(Var, eval(Exp, Env), Env);
@@ -226,7 +232,12 @@ eval_quote_exp_test() ->
 
 
 eval_if_cond_test() ->
-    ?assertEqual({found_if, [foo, bar]}, val(eval(["if", foo, bar]))).
+    ?assertEqual(
+        "equal",
+        val(eval(["if", ["=", 2, 2.0], ["quote", "equal"], ["quote", "notequal"]]))),
+    ?assertEqual(
+        "notequal",
+        val(eval(["if", ["eq?", 2, 2.0], ["quote", "equal"], ["quote", "notequal"]]))).
 
 
 eval_var_ref_test() ->
@@ -259,18 +270,20 @@ eval_lambda_test() ->
 
 
 % Proc tests
-proc_plus_test()   -> ?assertEqual(12    , val(eval(["+"    , 5  , 7]))).
-proc_mult_test()   -> ?assertEqual(35    , val(eval(["*"    , 5  , 7]))).
-proc_sub_test()    -> ?assertEqual(-2    , val(eval(["-"    , 5  , 7]))).
-proc_div_test()    -> ?assertEqual(2.0   , val(eval(["/"    , 14 , 7]))).
-proc_gt_test()     -> ?assertEqual(true  , val(eval([">"    , 14 , 7]))).
-proc_lt_test()     -> ?assertEqual(false , val(eval(["<"    , 14 , 7]))).
-proc_lte_test()    -> ?assertEqual(false , val(eval(["=<"   , 14 , 7]))).
-proc_gte_test()    -> ?assertEqual(true  , val(eval([">="   , 14 , 7]))).
-proc_equal_test()  -> ?assertEqual(true  , val(eval(["="    , 2  , 2.0]))).
-proc_eq_test()     -> ?assertEqual(false , val(eval(["eq?"  , 2  , 2.0]))).
-proc_neq_test()    -> ?assertEqual(true  , val(eval(["neq?" , 2  , 2.0]))).
+proc_plus_test()      -> ?assertEqual(12    , val(eval(["+"    , 5      , 7]))).
+proc_mult_test()      -> ?assertEqual(35    , val(eval(["*"    , 5      , 7]))).
+proc_sub_test()       -> ?assertEqual(-2    , val(eval(["-"    , 5      , 7]))).
+proc_div_test()       -> ?assertEqual(2.0   , val(eval(["/"    , 14     , 7]))).
+proc_gt_test()        -> ?assertEqual(true  , val(eval([">"    , 14     , 7]))).
+proc_lt_test()        -> ?assertEqual(false , val(eval(["<"    , 14     , 7]))).
+proc_lte_test()       -> ?assertEqual(false , val(eval(["=<"   , 14     , 7]))).
+proc_gte_test()       -> ?assertEqual(true  , val(eval([">="   , 14     , 7]))).
+proc_equal_test()     -> ?assertEqual(true  , val(eval(["="    , 2      , 2.0]))).
+proc_un_equal_test()  -> ?assertEqual(false , val(eval(["="    , 3      , 2.0]))).
+proc_eq_test()        -> ?assertEqual(false , val(eval(["eq?"  , 2      , 2.0]))).
+proc_neq_test()       -> ?assertEqual(true  , val(eval(["neq?" , 2      , 2.0]))).
 %proc_length_test() -> ?assertEqual(4     , val(eval(["length" , ["quote" , 1, 2, 3, 4]]))).
+%proc_equal_str_test() -> ?assertEqual(false , val(eval(["="    , "asdf" , "fdsa"]))).
 
 
 % Tokenize tests
@@ -302,3 +315,9 @@ parse_square_test() ->
     ?assertEqual(
         ["begin", ["define", "square", ["lambda", ["x"], ["*", "x", "x"]]], ["square", 4]],
         parse("(begin (define square (lambda (x) (* x x))) (square 4))")).
+
+
+parse_if_test() ->
+    ?assertEqual(
+        ["if", ["=", 2, 2.0], ["quote", "equal"], ["quote", "notequal"]],
+        parse("(if (= 2 2.0) (quote equal) (quote notequal))")).
