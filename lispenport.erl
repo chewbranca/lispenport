@@ -66,13 +66,12 @@ new_env() ->
         {"=", fun erlang:'=='/2},
         {"eq?", fun erlang:'=:='/2},
         {"neq?", fun erlang:'=/='/2},
-        {"length", fun erlang:length/1}
+        {"length", fun erlang:length/1},
         %{"not", fun erlang:not/1},
-        %{"cons", fun(X,Y) -> [X | Y] end},
-        %{"car", fun erlang:hd/2},
-        %{"cdr", fun erlang:tl/2},
-        %{"append", fun erlang:'+'/2},
-        %{"list", fun erlang:'+'/2},
+        {"cons", fun(X,Y) -> [X | Y] end},
+        {"car", fun erlang:hd/1},
+        {"cdr", fun erlang:tl/1},
+        {"append", fun erlang:'++'/2}
         %{"list?", fun erlang:'+'/2},
         %{"null?", fun erlang:'+'/2},
         %{"symbol?", fun erlang:'+'/2},
@@ -92,12 +91,16 @@ eval(X, Env) when not(is_list(X)) ->
 % (quote exp)
 eval(["quote", Rest], Env) ->
     {Rest, Env};
+eval(["list" | Rest], Env) ->
+    {Rest, Env};
 % (if test conseq alt)
 eval(["if", Predicate, Consequent, Alternative], Env) ->
     % Better way to do the fallthrough for false/undefined?
+    % Also, these should be rethought, because, nil
     case eval(Predicate, Env) of
         {false, _EnvX} -> eval(Alternative, Env);
         {undefined, _EnvX} -> eval(Alternative, Env);
+        {nil, _EnvX} -> eval(Alternative, Env);
         {_, _EnvX} -> eval(Consequent, Env)
     end;
 % (set! var exp)
