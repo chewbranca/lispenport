@@ -24,5 +24,15 @@ start_link() ->
 %% ===================================================================
 
 init([]) ->
-    {ok, { {one_for_one, 5, 10}, []} }.
+    Children = [
+        {
+            lispenport_runtime,
+            {lispenport_runtime, start_link, []},
+            permanent,
+            1000,
+            worker,
+            [lispenport_runtime]
+        }
+    ],
 
+    {ok, {{one_for_one, 5, 10}, Children}}.

@@ -206,6 +206,11 @@ parse(Sexps) ->
     read(tokenize(Sexps)).
 
 
+run(Sexp, Env) ->
+    {Resp, EnvX} = eval(parse(re:replace(Sexp, "\\n", "", [global, {return, list}])), Env),
+    {ok, Resp, EnvX}.
+
+
 repl() ->
     repl(new_env()).
 
