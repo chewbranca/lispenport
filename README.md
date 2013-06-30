@@ -5,8 +5,7 @@ It's like a davenport, which is like a couch, but with a lisp!
 
 ## Use it
 
-		erl
-		> c(lispeport).
+		$ make run
 		> lispenport:repl().
 
 		lispenport> (+ 2 2)

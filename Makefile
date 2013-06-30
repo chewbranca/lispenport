@@ -9,4 +9,4 @@ deps:
 	$(REBAR) get-deps update-deps
 
 run:
-	erl -pa deps/*/ebin ebin
+	erl -pa deps/*/ebin ebin -s lispenport
